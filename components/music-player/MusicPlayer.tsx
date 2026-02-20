@@ -40,7 +40,37 @@ export default function MusicPlayer() {
   if (!currentSong) {
     return (
       <View style={[styles.container, styles.centerContent]}>
-        <ThemedText style={{ color: '#FFF' }}>No song playing</ThemedText>
+        <View style={styles.emptyStateContainer}>
+          {/* Music Note Icon */}
+          <View style={styles.emptyStateIconContainer}>
+            <Ionicons name="musical-notes" size={80} color="#D6A3E4" style={styles.emptyStateIcon} />
+            <View style={styles.musicWaveContainer}>
+              <View style={[styles.musicWave, styles.wave1]} />
+              <View style={[styles.musicWave, styles.wave2]} />
+              <View style={[styles.musicWave, styles.wave3]} />
+              <View style={[styles.musicWave, styles.wave4]} />
+            </View>
+          </View>
+
+          {/* Empty State Text */}
+          <ThemedText style={styles.emptyStateTitle}>No Music Playing</ThemedText>
+          <ThemedText style={styles.emptyStateSubtitle}>
+            Discover your favorite tunes and let the rhythm take over
+          </ThemedText>
+
+          {/* Action Button */}
+          <TouchableOpacity style={styles.emptyStateButton}>
+            <Ionicons name="musical-notes" size={20} color="#000" />
+            <ThemedText style={styles.emptyStateButtonText}>Browse Music</ThemedText>
+          </TouchableOpacity>
+
+          {/* Decorative Elements */}
+          <View style={styles.emptyStateDecorations}>
+            <View style={styles.decorationCircle} />
+            <View style={[styles.decorationCircle, styles.decorationCircle2]} />
+            <View style={[styles.decorationCircle, styles.decorationCircle3]} />
+          </View>
+        </View>
       </View>
     );
   }
@@ -158,6 +188,7 @@ export default function MusicPlayer() {
                 <Ionicons name="list" size={24} color="#FFF" />
               </TouchableOpacity>
             </View>
+            <View style={{ height: 80 }} /> {/* Spacer for Bottom Tab Bar */}
 
           </View>
         </View>
@@ -226,7 +257,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'space-around',
-    paddingBottom: 40,
+    paddingBottom: 120, // Increased to avoid bottom tab bar
   },
   artworkContainer: {
     shadowColor: '#D6A3E4',
@@ -349,5 +380,128 @@ const styles = StyleSheet.create({
     height: 4,
     borderRadius: 2,
     backgroundColor: '#D6A3E4',
+  },
+  // Empty State Styles
+  emptyStateContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 40,
+    position: 'relative',
+  },
+  emptyStateIconContainer: {
+    marginBottom: 32,
+    position: 'relative',
+  },
+  emptyStateIcon: {
+    opacity: 0.8,
+  },
+  musicWaveContainer: {
+    position: 'absolute',
+    bottom: -10,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'flex-end',
+    height: 20,
+    gap: 3,
+  },
+  musicWave: {
+    width: 3,
+    backgroundColor: '#D6A3E4',
+    borderRadius: 2,
+    opacity: 0.6,
+  },
+  wave1: {
+    height: 8,
+    animationDuration: '1.2s',
+    animationDelay: '0s',
+  },
+  wave2: {
+    height: 12,
+    animationDuration: '1.5s',
+    animationDelay: '0.3s',
+  },
+  wave3: {
+    height: 10,
+    animationDuration: '1.3s',
+    animationDelay: '0.6s',
+  },
+  wave4: {
+    height: 6,
+    animationDuration: '1.1s',
+    animationDelay: '0.9s',
+  },
+  emptyStateTitle: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#FFF',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  emptyStateSubtitle: {
+    fontSize: 16,
+    color: '#888',
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 40,
+    paddingHorizontal: 20,
+  },
+  emptyStateButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#D6A3E4',
+    paddingHorizontal: 24,
+    paddingVertical: 14,
+    borderRadius: 25,
+    gap: 8,
+    shadowColor: '#D6A3E4',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  emptyStateButtonText: {
+    color: '#000',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  emptyStateDecorations: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    pointerEvents: 'none',
+  },
+  decorationCircle: {
+    position: 'absolute',
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#D6A3E4',
+    opacity: 0.1,
+    top: '20%',
+    left: '10%',
+  },
+  decorationCircle2: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    top: '60%',
+    right: '15%',
+    left: 'auto',
+    backgroundColor: '#FFF',
+    opacity: 0.05,
+  },
+  decorationCircle3: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    top: '40%',
+    left: '70%',
+    backgroundColor: '#D6A3E4',
+    opacity: 0.08,
   },
 });
