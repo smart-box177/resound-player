@@ -14,6 +14,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { SongListItem } from "@/components/music-player/SongListItem";
 import { ThemedText } from "@/components/themed-text";
 import { FilterChip } from "@/components/ui/FilterChip";
+import { useMusicPlayer } from "@/hooks/music/useMusicPlayer";
+import { Song } from "@/types/music";
 
 export default function PlaylistScreen() {
   const [permissionResponse, requestPermission] = MediaLibrary.usePermissions({
@@ -23,6 +25,7 @@ export default function PlaylistScreen() {
   const [assets, setAssets] = useState<MediaLibrary.Asset[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState("All");
+  const { play, currentSong, isPlaying } = useMusicPlayer();
 
   // We'll add this to the hook later, for now just mock or ignore
   // const { play } = useMusicPlayer();
@@ -126,14 +129,24 @@ export default function PlaylistScreen() {
           <FlatList
             data={assets}
             keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
-              <SongListItem
-                title={item.filename.replace(/\.[^/.]+$/, "")} // Remove extension
-                artist="Unknown Artist" // MediaLibrary sometimes doesn't give metadata easily without ID3 parsing
-                duration={item.duration}
-                onPress={() => console.log("Play", item.uri)}
-              />
-            )}
+            renderItem={({ item }) => {
+              const song: Song = {
+                id: item.id,
+                title: item.filename.replace(/\.[^/.]+$/, ""),
+                artist: "Unknown Artist",
+                duration: item.duration * 1000 || 0,
+                uri: item.uri,
+              };
+              return (
+                <SongListItem
+                  title={song.title}
+                  artist={song.artist}
+                  duration={item.duration}
+                  isPlaying={currentSong?.id === song.id && isPlaying}
+                  onPress={() => play(song)}
+                />
+              );
+            }}
             contentContainerStyle={styles.listContent}
             ListEmptyComponent={renderEmptyState}
           />
