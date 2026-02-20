@@ -19,7 +19,17 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.READ_MEDIA_AUDIO",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.READ_MEDIA_VISUAL_USER_SELECTED",
+        "android.permission.ACCESS_MEDIA_LOCATION",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.READ_MEDIA_VIDEO"
+      ],
+      "package": "com.blackdice.resoundplayer"
     },
     "web": {
       "output": "static",
@@ -32,7 +42,17 @@
         {
           "photosPermission": "Allow $(PRODUCT_NAME) to access your photos.",
           "savePhotosPermission": "Allow $(PRODUCT_NAME) to save photos.",
-          "isAccessMediaLocationEnabled": true
+          "isAccessMediaLocationEnabled": true,
+          "android": {
+            "minSdkVersion": 21,
+            "permissions": [
+              "android.permission.READ_MEDIA_AUDIO",
+              "android.permission.READ_EXTERNAL_STORAGE"
+            ]
+          },
+          "mediaTypes": [
+            "audio"
+          ]
         }
       ],
       [
@@ -51,6 +71,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "1f6124e7-3d08-4bd3-8fed-fe9beaec9220"
+      }
     }
   }
 }

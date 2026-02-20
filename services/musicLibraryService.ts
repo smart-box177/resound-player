@@ -1,13 +1,21 @@
-import { Song } from '@/types/music';
-import * as MediaLibrary from 'expo-media-library';
+import { Song } from "@/types/music";
+import * as MediaLibrary from "expo-media-library";
 
 export class MusicLibraryService {
   static async requestPermissions(): Promise<boolean> {
     try {
-      const { status } = await MediaLibrary.requestPermissionsAsync();
-      return status === 'granted';
+      // First check if permissions are already granted
+      const { status: existingStatus } =
+        await MediaLibrary.getPermissionsAsync();
+      if (existingStatus === "granted") {
+        return true;
+      }
+
+      // Request permissions
+      const { status } = await MediaLibrary.requestPermissionsAsync(false);
+      return status === "granted";
     } catch (error) {
-      console.error('Error requesting media library permissions:', error);
+      console.error("Error requesting media library permissions:", error);
       return false;
     }
   }
@@ -22,15 +30,15 @@ export class MusicLibraryService {
 
       return media.assets.map((asset) => ({
         id: asset.id,
-        title: asset.filename.replace(/\.[^/.]+$/, ''), // Remove file extension
-        artist: 'Unknown Artist', // You might want to extract this from metadata
+        title: asset.filename.replace(/\.[^/.]+$/, ""), // Remove file extension
+        artist: "Unknown Artist", // You might want to extract this from metadata
         album: undefined, // You might want to extract this from metadata
         duration: asset.duration * 1000 || 0, // Convert to milliseconds
         uri: asset.uri,
         artwork: undefined, // You might want to extract album art
       }));
     } catch (error) {
-      console.error('Error loading songs from device:', error);
+      console.error("Error loading songs from device:", error);
       return [];
     }
   }
@@ -39,14 +47,15 @@ export class MusicLibraryService {
     try {
       const allSongs = await this.getAllSongs();
       const lowerQuery = query.toLowerCase();
-      
-      return allSongs.filter(song => 
-        song.title.toLowerCase().includes(lowerQuery) ||
-        song.artist.toLowerCase().includes(lowerQuery) ||
-        (song.album && song.album.toLowerCase().includes(lowerQuery))
+
+      return allSongs.filter(
+        (song) =>
+          song.title.toLowerCase().includes(lowerQuery) ||
+          song.artist.toLowerCase().includes(lowerQuery) ||
+          (song.album && song.album.toLowerCase().includes(lowerQuery)),
       );
     } catch (error) {
-      console.error('Error searching songs:', error);
+      console.error("Error searching songs:", error);
       return [];
     }
   }
@@ -56,7 +65,7 @@ export class MusicLibraryService {
       const albums = await MediaLibrary.getAlbumsAsync();
       return albums;
     } catch (error) {
-      console.error('Error loading albums:', error);
+      console.error("Error loading albums:", error);
       return [];
     }
   }
@@ -66,10 +75,10 @@ export class MusicLibraryService {
       // Note: getArtistsAsync is not available in all versions of expo-media-library
       // For now, we'll extract unique artists from songs
       const songs = await this.getAllSongs();
-      const artists = [...new Set(songs.map(song => song.artist))];
-      return artists.map(name => ({ name, id: name }));
+      const artists = [...new Set(songs.map((song) => song.artist))];
+      return artists.map((name) => ({ name, id: name }));
     } catch (error) {
-      console.error('Error loading artists:', error);
+      console.error("Error loading artists:", error);
       return [];
     }
   }
@@ -79,7 +88,7 @@ export class MusicLibraryService {
       const asset = await MediaLibrary.getAssetInfoAsync(assetId);
       return asset;
     } catch (error) {
-      console.error('Error getting song metadata:', error);
+      console.error("Error getting song metadata:", error);
       return null;
     }
   }

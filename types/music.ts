@@ -22,7 +22,7 @@ export interface MusicPlayerState {
   duration: number;
   position: number;
   isLoading: boolean;
-  repeatMode: 'none' | 'one' | 'all';
+  repeatMode: "none" | "one" | "all";
   isShuffled: boolean;
   playlist: Song[];
   currentIndex: number;
@@ -42,4 +42,5 @@ export interface MusicPlayerContextType extends MusicPlayerState {
   addToPlaylist: (song: Song) => void;
   removeFromPlaylist: (songId: string) => void;
   loadPlaylist: (songs: Song[], startIndex?: number) => void;
+  setPlaylist: (songs: Song[]) => void;
 }

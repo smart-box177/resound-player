@@ -1,18 +1,22 @@
-import { ThemedText } from '@/components/themed-text';
-import { useMusicPlayer } from '@/hooks/music/useMusicPlayer';
-import { formatTime } from '@/utils/timeUtils';
-import { Ionicons } from '@expo/vector-icons';
-import React from 'react';
+import { ThemedText } from "@/components/themed-text";
+import { useMusicPlayer } from "@/hooks/music/useMusicPlayer";
+import { formatTime } from "@/utils/timeUtils";
+import { Ionicons } from "@expo/vector-icons";
+import * as MediaLibrary from "expo-media-library";
+import { useRouter } from "expo-router";
+import React, { useState } from "react";
 import {
+  ActivityIndicator,
+  Alert,
   Dimensions,
   Image,
   StyleSheet,
   TouchableOpacity,
-  View
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-const { width } = Dimensions.get('window');
+const { width } = Dimensions.get("window");
 
 export default function MusicPlayer() {
   const {
@@ -27,7 +31,70 @@ export default function MusicPlayer() {
     nextSong,
     previousSong,
     toggleRepeat,
+    setPlaylist,
+    play,
   } = useMusicPlayer();
+
+  const router = useRouter();
+
+  // Use the modern permissions hook
+  const [permissionResponse, requestPermission] = MediaLibrary.usePermissions();
+  const [isLoadingMusic, setIsLoadingMusic] = useState(false);
+
+  const handleBrowseMusic = async () => {
+    setIsLoadingMusic(true);
+
+    try {
+      // Check / request permission using the hook
+      let permission = permissionResponse;
+
+      if (!permission || permission.status !== "granted") {
+        permission = await requestPermission();
+
+        if (permission.status !== "granted") {
+          Alert.alert(
+            "Permission Required",
+            "Please grant access to your media library to browse music.",
+            [{ text: "OK" }],
+          );
+          return;
+        }
+      }
+
+      // Load audio assets only (modern syntax)
+      const media = await MediaLibrary.getAssetsAsync({
+        mediaType: ["audio"], // array syntax is preferred
+        first: 500,
+        sortBy: ["creationTime"], // or [['creationTime', false]] for descending
+      });
+
+      if (media.assets.length === 0) {
+        Alert.alert("No Music Found", "No audio files found on your device.");
+        return;
+      }
+
+      // Map to your Song format
+      const songs = media.assets.map((asset) => ({
+        id: asset.id,
+        title: asset.filename.replace(/\.[^/.]+$/, ""),
+        artist: "Unknown Artist",
+        album: undefined,
+        duration: asset.duration * 1000 || 0, // ms
+        uri: asset.uri,
+        artwork: undefined,
+      }));
+
+      setPlaylist(songs);
+
+      // Navigate to playlist
+      router.push("/playlist");
+    } catch (error) {
+      console.error("Error loading music:", error);
+      Alert.alert("Error", "Failed to load music library. Please try again.");
+    } finally {
+      setIsLoadingMusic(false);
+    }
+  };
 
   const handlePlayPause = () => {
     if (isPlaying) {
@@ -43,7 +110,12 @@ export default function MusicPlayer() {
         <View style={styles.emptyStateContainer}>
           {/* Music Note Icon */}
           <View style={styles.emptyStateIconContainer}>
-            <Ionicons name="musical-notes" size={80} color="#D6A3E4" style={styles.emptyStateIcon} />
+            <Ionicons
+              name="musical-notes"
+              size={80}
+              color="#D6A3E4"
+              style={styles.emptyStateIcon}
+            />
             <View style={styles.musicWaveContainer}>
               <View style={[styles.musicWave, styles.wave1]} />
               <View style={[styles.musicWave, styles.wave2]} />
@@ -53,15 +125,30 @@ export default function MusicPlayer() {
           </View>
 
           {/* Empty State Text */}
-          <ThemedText style={styles.emptyStateTitle}>No Music Playing</ThemedText>
+          <ThemedText style={styles.emptyStateTitle}>
+            No Music Playing
+          </ThemedText>
           <ThemedText style={styles.emptyStateSubtitle}>
             Discover your favorite tunes and let the rhythm take over
           </ThemedText>
 
           {/* Action Button */}
-          <TouchableOpacity style={styles.emptyStateButton}>
-            <Ionicons name="musical-notes" size={20} color="#000" />
-            <ThemedText style={styles.emptyStateButtonText}>Browse Music</ThemedText>
+          <TouchableOpacity
+            style={[
+              styles.emptyStateButton,
+              isLoadingMusic && styles.disabledButton,
+            ]}
+            onPress={handleBrowseMusic}
+            disabled={isLoadingMusic}
+          >
+            {isLoadingMusic ? (
+              <ActivityIndicator size="small" color="#000" />
+            ) : (
+              <Ionicons name="musical-notes" size={20} color="#000" />
+            )}
+            <ThemedText style={styles.emptyStateButtonText}>
+              {isLoadingMusic ? "Loading..." : "Browse Music"}
+            </ThemedText>
           </TouchableOpacity>
 
           {/* Decorative Elements */}
@@ -82,7 +169,6 @@ export default function MusicPlayer() {
     <View style={styles.backgroundContainer}>
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.container}>
-
           {/* Header */}
           <View style={styles.header}>
             <TouchableOpacity style={styles.headerButton}>
@@ -109,20 +195,25 @@ export default function MusicPlayer() {
             {/* Artwork */}
             <View style={styles.artworkContainer}>
               {currentSong.artwork ? (
-                <Image source={{ uri: currentSong.artwork }} style={styles.artwork} />
+                <Image
+                  source={{ uri: currentSong.artwork }}
+                  style={styles.artwork}
+                />
               ) : (
                 <View style={[styles.artwork, styles.placeholderArtwork]}>
                   <Ionicons name="musical-notes" size={80} color="#666" />
                 </View>
               )}
             </View>
-
             {/* Song Info */}
             <View style={styles.infoContainer}>
-              <ThemedText style={styles.songTitle} numberOfLines={1}>{currentSong.title}</ThemedText>
-              <ThemedText style={styles.artistName} numberOfLines={1}>{currentSong.artist}</ThemedText>
+              <ThemedText style={styles.songTitle} numberOfLines={1}>
+                {currentSong.title}
+              </ThemedText>
+              <ThemedText style={styles.artistName} numberOfLines={1}>
+                {currentSong.artist}
+              </ThemedText>
             </View>
-
             {/* Lyrics Placeholder */}
             <View style={styles.lyricsContainer}>
               <ThemedText style={styles.lyricsText}>
@@ -135,31 +226,46 @@ export default function MusicPlayer() {
                 I close my eyes let go and drift away.
               </ThemedText>
             </View>
-
             {/* Progress Bar */}
             <View style={styles.progressContainer}>
               <View style={styles.progressBarBackground}>
-                <View style={[styles.progressBarFill, { width: `${progressPercent}%` }]} />
-                <View style={[styles.progressKnob, { left: `${progressPercent}%` }]} />
+                <View
+                  style={[
+                    styles.progressBarFill,
+                    { width: `${progressPercent}%` },
+                  ]}
+                />
+                <View
+                  style={[styles.progressKnob, { left: `${progressPercent}%` }]}
+                />
               </View>
               <View style={styles.timeContainer}>
-                <ThemedText style={styles.timeText}>{formatTime(position)}</ThemedText>
-                <ThemedText style={styles.timeText}>{formatTime(duration)}</ThemedText>
+                <ThemedText style={styles.timeText}>
+                  {formatTime(position)}
+                </ThemedText>
+                <ThemedText style={styles.timeText}>
+                  {formatTime(duration)}
+                </ThemedText>
               </View>
             </View>
-
             {/* Controls */}
             <View style={styles.controlsContainer}>
-              <TouchableOpacity onPress={toggleRepeat} style={styles.secondaryControl}>
+              <TouchableOpacity
+                onPress={toggleRepeat}
+                style={styles.secondaryControl}
+              >
                 <Ionicons
-                  name={repeatMode === 'one' ? "repeat" : "repeat"}
+                  name={repeatMode === "one" ? "repeat" : "repeat"}
                   size={22}
-                  color={repeatMode !== 'none' ? "#D6A3E4" : "#888"}
+                  color={repeatMode !== "none" ? "#D6A3E4" : "#888"}
                 />
-                {repeatMode === 'one' && <View style={styles.repeatBadge} />}
+                {repeatMode === "one" && <View style={styles.repeatBadge} />}
               </TouchableOpacity>
 
-              <TouchableOpacity onPress={previousSong} style={styles.mainControl}>
+              <TouchableOpacity
+                onPress={previousSong}
+                style={styles.mainControl}
+              >
                 <Ionicons name="play-back" size={32} color="#FFF" />
               </TouchableOpacity>
 
@@ -189,7 +295,6 @@ export default function MusicPlayer() {
               </TouchableOpacity>
             </View>
             <View style={{ height: 80 }} /> {/* Spacer for Bottom Tab Bar */}
-
           </View>
         </View>
       </SafeAreaView>
@@ -200,67 +305,67 @@ export default function MusicPlayer() {
 const styles = StyleSheet.create({
   backgroundContainer: {
     flex: 1,
-    backgroundColor: '#0F0F0F', // Dark background for the whole screen
+    backgroundColor: "#0F0F0F", // Dark background for the whole screen
   },
   safeArea: {
     flex: 1,
   },
   container: {
     flex: 1,
-    backgroundColor: 'transparent',
+    backgroundColor: "transparent",
   },
   centerContent: {
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingHorizontal: 24,
     paddingTop: 10,
     marginBottom: 20,
   },
   headerTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#FFF',
+    fontWeight: "600",
+    color: "#FFF",
     opacity: 0.9,
   },
   headerRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 16,
   },
   headerButton: {
     padding: 4,
   },
   notificationBadge: {
-    position: 'absolute',
+    position: "absolute",
     top: -4,
     right: -4,
-    backgroundColor: '#D6A3E4',
+    backgroundColor: "#D6A3E4",
     borderRadius: 8,
     minWidth: 16,
     height: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     zIndex: 1,
     paddingHorizontal: 2,
   },
   notificationText: {
-    color: '#000',
+    color: "#000",
     fontSize: 10,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   content: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'space-around',
+    alignItems: "center",
+    justifyContent: "space-around",
     paddingBottom: 120, // Increased to avoid bottom tab bar
   },
   artworkContainer: {
-    shadowColor: '#D6A3E4',
+    shadowColor: "#D6A3E4",
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.3,
     shadowRadius: 24,
@@ -270,87 +375,87 @@ const styles = StyleSheet.create({
     width: width * 0.75,
     height: width * 0.75,
     borderRadius: (width * 0.75) / 2, // Circular
-    backgroundColor: '#2A2A2A',
+    backgroundColor: "#2A2A2A",
   },
   placeholderArtwork: {
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   infoContainer: {
-    alignItems: 'center',
+    alignItems: "center",
     marginTop: 20,
     paddingHorizontal: 32,
   },
   songTitle: {
     fontSize: 24,
-    fontWeight: '700',
-    color: '#FFF',
+    fontWeight: "700",
+    color: "#FFF",
     marginBottom: 8,
-    textAlign: 'center',
+    textAlign: "center",
   },
   artistName: {
     fontSize: 16,
-    color: '#888',
-    textAlign: 'center',
+    color: "#888",
+    textAlign: "center",
   },
   lyricsContainer: {
-    alignItems: 'center',
+    alignItems: "center",
     marginVertical: 20,
     paddingHorizontal: 40,
   },
   lyricsText: {
     fontSize: 15,
-    color: '#444',
+    color: "#444",
     marginBottom: 8,
-    textAlign: 'center',
+    textAlign: "center",
     lineHeight: 22,
   },
   activeLyric: {
-    color: '#FFF',
-    fontWeight: '600',
+    color: "#FFF",
+    fontWeight: "600",
     fontSize: 17,
   },
   progressContainer: {
-    width: '100%',
+    width: "100%",
     paddingHorizontal: 32,
     marginBottom: 20,
   },
   progressBarBackground: {
     height: 4,
-    backgroundColor: '#333',
+    backgroundColor: "#333",
     borderRadius: 2,
-    width: '100%',
-    position: 'relative',
-    justifyContent: 'center',
+    width: "100%",
+    position: "relative",
+    justifyContent: "center",
   },
   progressBarFill: {
     height: 4,
-    backgroundColor: '#D6A3E4', // Purple-ish accent from design
+    backgroundColor: "#D6A3E4", // Purple-ish accent from design
     borderRadius: 2,
   },
   progressKnob: {
-    position: 'absolute',
+    position: "absolute",
     width: 12,
     height: 12,
-    backgroundColor: '#D6A3E4',
+    backgroundColor: "#D6A3E4",
     borderRadius: 6,
     marginLeft: -6, // Center the knob on the end of the bar
   },
   timeContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginTop: 12,
   },
   timeText: {
-    color: '#888',
+    color: "#888",
     fontSize: 12,
-    fontVariant: ['tabular-nums'],
+    fontVariant: ["tabular-nums"],
   },
   controlsContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    width: '100%',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    width: "100%",
     paddingHorizontal: 32,
   },
   mainControl: {
@@ -363,145 +468,148 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: 36,
-    backgroundColor: '#D6A3E4',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#D6A3E4',
+    backgroundColor: "#D6A3E4",
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#D6A3E4",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 4,
   },
   repeatBadge: {
-    position: 'absolute',
+    position: "absolute",
     top: 8,
     right: 6,
     width: 4,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#D6A3E4',
+    backgroundColor: "#D6A3E4",
   },
   // Empty State Styles
   emptyStateContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     paddingHorizontal: 40,
-    position: 'relative',
+    position: "relative",
   },
   emptyStateIconContainer: {
     marginBottom: 32,
-    position: 'relative',
+    position: "relative",
   },
   emptyStateIcon: {
     opacity: 0.8,
   },
   musicWaveContainer: {
-    position: 'absolute',
+    position: "absolute",
     bottom: -10,
     left: 0,
     right: 0,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'flex-end',
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "flex-end",
     height: 20,
     gap: 3,
   },
   musicWave: {
     width: 3,
-    backgroundColor: '#D6A3E4',
+    backgroundColor: "#D6A3E4",
     borderRadius: 2,
     opacity: 0.6,
   },
   wave1: {
     height: 8,
-    animationDuration: '1.2s',
-    animationDelay: '0s',
+    animationDuration: "1.2s",
+    animationDelay: "0s",
   },
   wave2: {
     height: 12,
-    animationDuration: '1.5s',
-    animationDelay: '0.3s',
+    animationDuration: "1.5s",
+    animationDelay: "0.3s",
   },
   wave3: {
     height: 10,
-    animationDuration: '1.3s',
-    animationDelay: '0.6s',
+    animationDuration: "1.3s",
+    animationDelay: "0.6s",
   },
   wave4: {
     height: 6,
-    animationDuration: '1.1s',
-    animationDelay: '0.9s',
+    animationDuration: "1.1s",
+    animationDelay: "0.9s",
   },
   emptyStateTitle: {
     fontSize: 28,
-    fontWeight: '700',
-    color: '#FFF',
+    fontWeight: "700",
+    color: "#FFF",
     marginBottom: 12,
-    textAlign: 'center',
+    textAlign: "center",
   },
   emptyStateSubtitle: {
     fontSize: 16,
-    color: '#888',
-    textAlign: 'center',
+    color: "#888",
+    textAlign: "center",
     lineHeight: 24,
     marginBottom: 40,
     paddingHorizontal: 20,
   },
   emptyStateButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#D6A3E4',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#D6A3E4",
     paddingHorizontal: 24,
     paddingVertical: 14,
     borderRadius: 25,
     gap: 8,
-    shadowColor: '#D6A3E4',
+    shadowColor: "#D6A3E4",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 4,
   },
   emptyStateButtonText: {
-    color: '#000',
+    color: "#000",
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
+  },
+  disabledButton: {
+    opacity: 0.7,
   },
   emptyStateDecorations: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    pointerEvents: 'none',
+    pointerEvents: "none",
   },
   decorationCircle: {
-    position: 'absolute',
+    position: "absolute",
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: '#D6A3E4',
+    backgroundColor: "#D6A3E4",
     opacity: 0.1,
-    top: '20%',
-    left: '10%',
+    top: "20%",
+    left: "10%",
   },
   decorationCircle2: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    top: '60%',
-    right: '15%',
-    left: 'auto',
-    backgroundColor: '#FFF',
+    top: "60%",
+    right: "15%",
+    left: "auto",
+    backgroundColor: "#FFF",
     opacity: 0.05,
   },
   decorationCircle3: {
     width: 80,
     height: 80,
     borderRadius: 40,
-    top: '40%',
-    left: '70%',
-    backgroundColor: '#D6A3E4',
+    top: "40%",
+    left: "70%",
+    backgroundColor: "#D6A3E4",
     opacity: 0.08,
   },
 });
