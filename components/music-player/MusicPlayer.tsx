@@ -1,5 +1,4 @@
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
 import { useMusicPlayer } from '@/hooks/music/useMusicPlayer';
 import { formatTime } from '@/utils/timeUtils';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,11 +6,11 @@ import React from 'react';
 import {
   Dimensions,
   Image,
-  SafeAreaView,
   StyleSheet,
   TouchableOpacity,
   View
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const { width } = Dimensions.get('window');
 
@@ -38,18 +37,11 @@ export default function MusicPlayer() {
     }
   };
 
-  // Safe default for testing/preview if no song is loaded, 
-  // though in a real app better to show a "Pick a song" state or similar.
-  // For this UI build, we want to see the UI even if empty? 
-  // The original code returned early. Let's keep a basic check but maybe use placeholder data if null for dev purposes? 
-  // original: if (!currentSong) return ...
-  // efficient approach: stick to original behavior for logic safety.
-
   if (!currentSong) {
     return (
-      <ThemedView style={[styles.container, styles.centerContent]}>
-        <ThemedText>No song playing</ThemedText>
-      </ThemedView>
+      <View style={[styles.container, styles.centerContent]}>
+        <ThemedText style={{ color: '#FFF' }}>No song playing</ThemedText>
+      </View>
     );
   }
 
@@ -57,125 +49,130 @@ export default function MusicPlayer() {
   const progressPercent = duration > 0 ? (position / duration) * 100 : 0;
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <ThemedView style={styles.container}>
+    <View style={styles.backgroundContainer}>
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.container}>
 
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.headerButton}>
-            <Ionicons name="chevron-down" size={28} color="#FFF" />
-          </TouchableOpacity>
-
-          <ThemedText style={styles.headerTitle}>Now Playing</ThemedText>
-
-          <View style={styles.headerRight}>
+          {/* Header */}
+          <View style={styles.header}>
             <TouchableOpacity style={styles.headerButton}>
-              <View style={styles.notificationBadge}>
-                <ThemedText style={styles.notificationText}>12</ThemedText>
-              </View>
-              <Ionicons name="notifications-outline" size={24} color="#FFF" />
+              <Ionicons name="chevron-down" size={28} color="#FFF" />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.headerButton}>
-              <Ionicons name="heart-outline" size={24} color="#FFF" />
-            </TouchableOpacity>
-          </View>
-        </View>
 
-        {/* Content */}
-        <View style={styles.content}>
-          {/* Artwork */}
-          <View style={styles.artworkContainer}>
-            {currentSong.artwork ? (
-              <Image source={{ uri: currentSong.artwork }} style={styles.artwork} />
-            ) : (
-              <View style={[styles.artwork, styles.placeholderArtwork]}>
-                <Ionicons name="musical-notes" size={80} color="#666" />
-              </View>
-            )}
-          </View>
+            <ThemedText style={styles.headerTitle}>Now Playing</ThemedText>
 
-          {/* Song Info */}
-          <View style={styles.infoContainer}>
-            <ThemedText style={styles.songTitle} numberOfLines={1}>{currentSong.title}</ThemedText>
-            <ThemedText style={styles.artistName} numberOfLines={1}>{currentSong.artist}</ThemedText>
-          </View>
-
-          {/* Lyrics Placeholder */}
-          <View style={styles.lyricsContainer}>
-            <ThemedText style={styles.lyricsText}>
-              Whispers in the midnight breeze,
-            </ThemedText>
-            <ThemedText style={[styles.lyricsText, styles.activeLyric]}>
-              Carrying dreams across the seas,
-            </ThemedText>
-            <ThemedText style={styles.lyricsText}>
-              I close my eyes let go and drift away.
-            </ThemedText>
-          </View>
-
-          {/* Progress Bar */}
-          <View style={styles.progressContainer}>
-            <View style={styles.progressBarBackground}>
-              <View style={[styles.progressBarFill, { width: `${progressPercent}%` }]} />
-              <View style={[styles.progressKnob, { left: `${progressPercent}%` }]} />
-            </View>
-            <View style={styles.timeContainer}>
-              <ThemedText style={styles.timeText}>{formatTime(position)}</ThemedText>
-              <ThemedText style={styles.timeText}>{formatTime(duration)}</ThemedText>
+            <View style={styles.headerRight}>
+              <TouchableOpacity style={styles.headerButton}>
+                <View style={styles.notificationBadge}>
+                  <ThemedText style={styles.notificationText}>12</ThemedText>
+                </View>
+                <Ionicons name="notifications-outline" size={24} color="#FFF" />
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.headerButton}>
+                <Ionicons name="heart-outline" size={24} color="#FFF" />
+              </TouchableOpacity>
             </View>
           </View>
 
-          {/* Controls */}
-          <View style={styles.controlsContainer}>
-            <TouchableOpacity onPress={toggleRepeat} style={styles.secondaryControl}>
-              <Ionicons
-                name={repeatMode === 'one' ? "repeat" : "repeat"}
-                size={22}
-                color={repeatMode !== 'none' ? "#D6A3E4" : "#888"}
-              />
-              {repeatMode === 'one' && <View style={styles.repeatBadge} />}
-            </TouchableOpacity>
-
-            <TouchableOpacity onPress={previousSong} style={styles.mainControl}>
-              <Ionicons name="play-back" size={32} color="#FFF" />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={handlePlayPause}
-              style={styles.playPauseButton}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <Ionicons name="hourglass" size={32} color="#000" />
+          {/* Content */}
+          <View style={styles.content}>
+            {/* Artwork */}
+            <View style={styles.artworkContainer}>
+              {currentSong.artwork ? (
+                <Image source={{ uri: currentSong.artwork }} style={styles.artwork} />
               ) : (
-                <Ionicons
-                  name={isPlaying ? "pause" : "play"}
-                  size={36}
-                  color="#000"
-                  style={{ marginLeft: isPlaying ? 0 : 4 }}
-                />
+                <View style={[styles.artwork, styles.placeholderArtwork]}>
+                  <Ionicons name="musical-notes" size={80} color="#666" />
+                </View>
               )}
-            </TouchableOpacity>
+            </View>
 
-            <TouchableOpacity onPress={nextSong} style={styles.mainControl}>
-              <Ionicons name="play-forward" size={32} color="#FFF" />
-            </TouchableOpacity>
+            {/* Song Info */}
+            <View style={styles.infoContainer}>
+              <ThemedText style={styles.songTitle} numberOfLines={1}>{currentSong.title}</ThemedText>
+              <ThemedText style={styles.artistName} numberOfLines={1}>{currentSong.artist}</ThemedText>
+            </View>
 
-            <TouchableOpacity style={styles.secondaryControl}>
-              <Ionicons name="list" size={24} color="#FFF" />
-            </TouchableOpacity>
+            {/* Lyrics Placeholder */}
+            <View style={styles.lyricsContainer}>
+              <ThemedText style={styles.lyricsText}>
+                Whispers in the midnight breeze,
+              </ThemedText>
+              <ThemedText style={[styles.lyricsText, styles.activeLyric]}>
+                Carrying dreams across the seas,
+              </ThemedText>
+              <ThemedText style={styles.lyricsText}>
+                I close my eyes let go and drift away.
+              </ThemedText>
+            </View>
+
+            {/* Progress Bar */}
+            <View style={styles.progressContainer}>
+              <View style={styles.progressBarBackground}>
+                <View style={[styles.progressBarFill, { width: `${progressPercent}%` }]} />
+                <View style={[styles.progressKnob, { left: `${progressPercent}%` }]} />
+              </View>
+              <View style={styles.timeContainer}>
+                <ThemedText style={styles.timeText}>{formatTime(position)}</ThemedText>
+                <ThemedText style={styles.timeText}>{formatTime(duration)}</ThemedText>
+              </View>
+            </View>
+
+            {/* Controls */}
+            <View style={styles.controlsContainer}>
+              <TouchableOpacity onPress={toggleRepeat} style={styles.secondaryControl}>
+                <Ionicons
+                  name={repeatMode === 'one' ? "repeat" : "repeat"}
+                  size={22}
+                  color={repeatMode !== 'none' ? "#D6A3E4" : "#888"}
+                />
+                {repeatMode === 'one' && <View style={styles.repeatBadge} />}
+              </TouchableOpacity>
+
+              <TouchableOpacity onPress={previousSong} style={styles.mainControl}>
+                <Ionicons name="play-back" size={32} color="#FFF" />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={handlePlayPause}
+                style={styles.playPauseButton}
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <Ionicons name="hourglass" size={32} color="#000" />
+                ) : (
+                  <Ionicons
+                    name={isPlaying ? "pause" : "play"}
+                    size={36}
+                    color="#000"
+                    style={{ marginLeft: isPlaying ? 0 : 4 }}
+                  />
+                )}
+              </TouchableOpacity>
+
+              <TouchableOpacity onPress={nextSong} style={styles.mainControl}>
+                <Ionicons name="play-forward" size={32} color="#FFF" />
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.secondaryControl}>
+                <Ionicons name="list" size={24} color="#FFF" />
+              </TouchableOpacity>
+            </View>
+
           </View>
-
         </View>
-      </ThemedView>
-    </SafeAreaView>
+      </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  backgroundContainer: {
+    flex: 1,
+    backgroundColor: '#0F0F0F', // Dark background for the whole screen
+  },
   safeArea: {
     flex: 1,
-    backgroundColor: '#0F0F0F', // Dark background as per design
   },
   container: {
     flex: 1,
